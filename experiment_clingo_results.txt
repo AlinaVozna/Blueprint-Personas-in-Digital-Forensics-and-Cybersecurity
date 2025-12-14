@@ -1,0 +1,32 @@
+======================================================================
+PHASE 1: Multi-Step Attack (Pivot)
+======================================================================
+[T1] lena   | scan       | Trust: 0.40 | Dec: ALLOW
+[T2] lena   | exploit    | Trust: 0.20 | Dec: BLOCK
+[T3] bob    | login      | Trust: 0.80 | Dec: ALLOW
+[T4] bob    | powershell | Trust: 0.60 | Dec: DELEGATE
+
+======================================================================
+PHASE 2: Complex Multi-Agent Scenario (New in Revision)
+======================================================================
+Step | Agent    | Action          | Trust  | Decision
+------------------------------------------------------------
+T1   | lena     | scan            | 0.40   | ←[92mALLOW←[0m
+T2   | lena     | phishing        | 0.20   | ←[91mBLOCK←[0m
+T3   | charlie  | db_access       | 0.80   | ←[92mALLOW←[0m
+T4   | diana    | containment     | 0.80   | ←[92mALLOW←[0m
+T5   | eve      | data_exfil      | 0.60   | ←[93mDELEGATE←[0m
+T6   | alice    | revoke_access   | 0.80   | ←[92mALLOW←[0m
+T7   | lena     | lateral_movement | 0.20   | ←[91mBLOCK←[0m
+T8   | diana    | escalate        | 0.80   | ←[92mALLOW←[0m
+
+======================================================================
+PHASE 3: Scalability & Breakdown (New Breakdown Metrics)
+======================================================================
+KB Size    | Ground (ms)  | Solve (ms) | Total (ms)
+-------------------------------------------------------
+100        | 0.00         | 0.00       | 2.00
+1000       | 1.00         | 0.00       | 7.98
+5000       | 1.97         | 0.00       | 35.90
+10000      | 3.99         | 1.00       | 74.83
+20000      | 7.98         | 0.00       | 139.63
