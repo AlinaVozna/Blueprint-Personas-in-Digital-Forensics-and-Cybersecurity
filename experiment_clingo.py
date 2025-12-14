@@ -10,69 +10,67 @@ trust_level(very_low, 1). trust_level(low, 2).
 trust_level(medium, 3). trust_level(high, 4). trust_level(very_high, 5).
 
 % --- 2. BLUEPRINT PERSONAS (STATIC PROFILES) ---
-persona(lena).
-intention(lena, malicious).
+
+persona(lena). intention(lena, malicious).
 technique(lena, exploit, high_severity).
 technique(lena, scan, low_severity).
+technique(lena, phishing, high_severity).
+technique(lena, lateral_movement, high_severity).
 
-persona(bob).
-intention(bob, benevolent). 
+persona(bob). intention(bob, benevolent). 
 technique(bob, login, neutral).
 technique(bob, powershell, high_severity).
 
+persona(alice). intention(alice, benevolent).
+technique(alice, revoke_access, neutral).
+
+persona(charlie). intention(charlie, benevolent).
+technique(charlie, db_access, neutral).
+
+persona(diana). intention(diana, benevolent).
+technique(diana, containment, neutral).
+technique(diana, escalate, neutral).
+
+persona(eve). intention(eve, benevolent).
+technique(eve, data_exfil, high_severity).
+
 % --- 3. DYNAMIC OBSERVATIONS (Input from Python) ---
-% observed(Agent, Action).  <-- Iniettato da Python
+% observed(Agent, Action). 
 
 % --- 4. ROT: TRUST INFERENCE LOGIC ---
 
-% A. Calcolo della Fiducia Base (dalle intenzioni della Persona)
 base_trust(Agent, low)    :- intention(Agent, malicious).
 base_trust(Agent, high)   :- intention(Agent, benevolent).
-
-% *** CORREZIONE QUI SOTTO ***
-% Aggiunto 'persona(Agent)' per rendere la variabile sicura (Safe Variable)
+% Safe variable fix
 base_trust(Agent, medium) :- 
     persona(Agent), 
     not intention(Agent, malicious), 
     not intention(Agent, benevolent).
 
-% B. Regole di Adattamento basate sull'Evento Osservato
-
-% CASO 1: L'azione osservata corrisponde a una tecnica GRAVE della persona
 derived_trust(Agent, very_low) :- 
-    observed(Agent, Action),
-    technique(Agent, Action, high_severity),
-    base_trust(Agent, low).
+    observed(Agent, Action), technique(Agent, Action, high_severity), base_trust(Agent, low).
 
 derived_trust(Agent, medium) :- 
-    observed(Agent, Action),
-    technique(Agent, Action, high_severity),
-    base_trust(Agent, high).
+    observed(Agent, Action), technique(Agent, Action, high_severity), base_trust(Agent, high).
 
-% CASO 2: Azioni a bassa severità
 derived_trust(Agent, low) :- 
-    observed(Agent, Action),
-    technique(Agent, Action, low_severity),
-    base_trust(Agent, low).
+    observed(Agent, Action), technique(Agent, Action, low_severity), base_trust(Agent, low).
 
-% CASO 3: Azioni neutre
 derived_trust(Agent, high) :- 
-    observed(Agent, Action),
-    technique(Agent, Action, neutral),
-    base_trust(Agent, high).
+    observed(Agent, Action), technique(Agent, Action, neutral), base_trust(Agent, high).
 
-% Fallback: Se non c'è un match specifico, mantieni la fiducia base
-% Anche qui aggiungiamo persona(Agent) per sicurezza, anche se base_trust lo rende safe
+derived_trust(charlie, medium) :- 
+    observed(charlie, db_access). 
+
+% Fallback
 derived_trust(Agent, Level) :- 
-    base_trust(Agent, Level),
-    not exception_triggered(Agent).
+    base_trust(Agent, Level), not exception_triggered(Agent).
     
 exception_triggered(Agent) :- derived_trust(Agent, X), base_trust(Agent, Y), X != Y.
 
 % --- 5. OUTPUT HELPER ---
 computed_trust_val(Agent, Val) :- 
-    derived_trust(Agent, Label), 
-    trust_level(Label, Val).
+    derived_trust(Agent, Label), trust_level(Label, Val).
 
 #show computed_trust_val/2.
 """
@@ -81,14 +79,7 @@ computed_trust_val(Agent, Val) :-
 # 2. COGNITIVE ENGINE (PYTHON LAYER)
 # ==============================================================================
 class CognitiveEngine:
-    def __init__(self):
-        pass
-
     def solve_scenario(self, agent_name, observed_action, required_trust_val):
-        """
-        Inietta l'osservazione corrente nel programma ASP e decide.
-        """
-        # Costruiamo il programma dinamico per questo step
         step_program = asp_program_base + f'\nobserved({agent_name}, {observed_action}).\n'
 
         ctl = clingo.Control(["0", "--warn=none"])
@@ -106,99 +97,105 @@ class CognitiveEngine:
                             trust_val = int(str(atom.arguments[1]))
                             trust_found = True
         
-        if not trust_found:
-            trust_val = 2 # Default Low se l'agente non viene risolto
+        if not trust_found: trust_val = 2 
 
-        # L-DINF Logic
-        decision = ""
-        reason = ""
+        display_trust = trust_val / 5.0 
+        required_float = required_trust_val / 5.0
         
+        decision = ""
         if trust_val >= required_trust_val:
             decision = "ALLOW"
-            reason = f"Trust ({trust_val}) >= Required ({required_trust_val})"
         elif trust_val <= 1: 
             decision = "BLOCK"
-            reason = f"Trust ({trust_val}) is CRITICAL (Malicious + High Sev)"
         else:
-            decision = "DELEGATE"
-            reason = f"Trust ({trust_val}) < Required ({required_trust_val}) -> Ambiguity Detected"
+            decision = "DELEGATE" # Gray Zone
 
-        return trust_val, decision, reason
+        return display_trust, decision
 
 # ==============================================================================
 # 3. EXPERIMENTS
 # ==============================================================================
-def run_multi_step_campaign():
+def run_phase1_pivot():
     print("="*70)
-    print("PHASE 1: Multi-Step Attack Campaign (Context-Aware Trust)")
+    print("PHASE 1: Multi-Step Attack (Pivot)")
     print("="*70)
+    engine = CognitiveEngine()
+    steps = [
+        {"s": "T1", "ag": "lena", "act": "scan", "req": 2},
+        {"s": "T2", "ag": "lena", "act": "exploit", "req": 4},
+        {"s": "T3", "ag": "bob", "act": "login", "req": 4},
+        {"s": "T4", "ag": "bob", "act": "powershell", "req": 4}
+    ]
+    for x in steps:
+        val, dec = engine.solve_scenario(x['ag'], x['act'], x['req'])
+        print(f"[{x['s']}] {x['ag']:<6} | {x['act']:<10} | Trust: {val:.2f} | Dec: {dec}")
 
+def run_phase2_complex():
+    print("\n" + "="*70)
+    print("PHASE 2: Complex Multi-Agent Scenario (New in Revision)")
+    print("="*70)
     engine = CognitiveEngine()
     
-    scenario_steps = [
-        {
-            "step": "T1", "agent": "lena", "action": "scan", "req": 2,
-            "desc": "Reconnaissance: Lena scans public ports (Low Sev)."
-        },
-        {
-            "step": "T2", "agent": "lena", "action": "exploit", "req": 4,
-            "desc": "Attack: Lena uses Zero-Day Exploit (High Sev)."
-        },
-        {
-            "step": "T3", "agent": "bob", "action": "login", "req": 4,
-            "desc": "Normal Ops: Bob logs into DB (Neutral)."
-        },
-        {
-            "step": "T4", "agent": "bob", "action": "powershell", "req": 4,
-            "desc": "Insider Threat? Bob runs encoded PowerShell (High Sev)."
-        }
+    steps = [
+        {"s": "T1", "ag": "lena", "act": "scan", "req": 2},
+        {"s": "T2", "ag": "lena", "act": "phishing", "req": 4},
+        {"s": "T3", "ag": "charlie", "act": "db_access", "req": 4},
+        {"s": "T4", "ag": "diana", "act": "containment", "req": 4},
+        {"s": "T5", "ag": "eve", "act": "data_exfil", "req": 4},
+        {"s": "T6", "ag": "alice", "act": "revoke_access", "req": 4},
+        {"s": "T7", "ag": "lena", "act": "lateral_movement", "req": 4},
+        {"s": "T8", "ag": "diana", "act": "escalate", "req": 4}
     ]
-
-    for s in scenario_steps:
-        print(f"\n--- [ {s['step']} ] {s['desc']} ---")
-        t_val, decision, reason = engine.solve_scenario(s['agent'], s['action'], s['req'])
+    
+    print(f"{'Step':<4} | {'Agent':<8} | {'Action':<15} | {'Trust':<6} | {'Decision'}")
+    print("-" * 60)
+    
+    for x in steps:
+        val, dec = engine.solve_scenario(x['ag'], x['act'], x['req'])
         
-        color = "\033[92m" if decision == "ALLOW" else "\033[91m" if decision == "BLOCK" else "\033[93m"
-        reset = "\033[0m"
-        
-        print(f"Agent Profile: {s['agent'].capitalize()}")
-        print(f"Observed Act : {s['action']}")
-        print(f"Trust Level  : {t_val} / 5")
-        print(f"Decision     : {color}{decision}{reset}")
-        print(f"Reasoning    : {reason}")
+        c_dec = f"\033[92m{dec}\033[0m" if dec=="ALLOW" else f"\033[91m{dec}\033[0m" if dec=="BLOCK" else f"\033[93m{dec}\033[0m"
+        print(f"{x['s']:<4} | {x['ag']:<8} | {x['act']:<15} | {val:.2f}   | {c_dec}")
 
-def run_performance_test():
+def run_phase3_scalability():
     print("\n" + "="*70)
-    print("PHASE 2: Scalability Stress Test")
+    print("PHASE 3: Scalability & Breakdown (New Breakdown Metrics)")
     print("="*70)
     
-    kb_sizes = [100, 1000, 5000, 10000]
-    print(f"{'KB Size (Facts)':<20} | {'Time (seconds)':<15}")
-    print("-" * 40)
+    kb_sizes = [100, 1000, 5000, 10000, 20000]
+    
+    print(f"{'KB Size':<10} | {'Ground (ms)':<12} | {'Solve (ms)':<10} | {'Total (ms)':<10}")
+    print("-" * 55)
 
     for size in kb_sizes:
-        # Generiamo log fittizi
-        noise = "".join([f'log(id_{i}, "user_login", "192.168.1.{i%255}").\n' for i in range(size)])
+        noise = "".join([f'log(id_{i}, "act", "ip"). ' for i in range(size)])
         
-        start_time = time.time()
-        
-        # Aggiungiamo un agente fittizio 'stress_test' per il test
-        # Definiamo anche una intenzione base per renderlo 'safe' nella regola base_trust
         program = asp_program_base + "\n" + noise + """
-        persona(stress_test). 
-        intention(stress_test, benevolent).
-        technique(stress_test, login, neutral).
-        observed(stress_test, login).
+        persona(stress). intention(stress, benevolent). technique(stress, login, neutral).
+        observed(stress, login).
         """
+        
+        # 1. Start Timer
+        t0 = time.time()
         
         ctl = clingo.Control(["0", "--warn=none"])
         ctl.add("base", [], program)
-        ctl.ground([("base", [])])
-        ctl.solve()
         
-        end_time = time.time()
-        print(f"{size:<20} | {(end_time - start_time):.4f}s")
+        # 2. Measure Grounding
+        t1 = time.time()
+        ctl.ground([("base", [])])
+        t2 = time.time()
+        
+        # 3. Measure Solving
+        ctl.solve()
+        t3 = time.time()
+        
+        ground_time = (t2 - t1) * 1000
+        solve_time = (t3 - t2) * 1000
+        total_time = (t3 - t0) * 1000 # Include overhead di add e setup
+        
+        print(f"{size:<10} | {ground_time:<12.2f} | {solve_time:<10.2f} | {total_time:<10.2f}")
 
 if __name__ == "__main__":
-    run_multi_step_campaign()
-    run_performance_test()
+    run_phase1_pivot()
+    run_phase2_complex()
+    run_phase3_scalability()
