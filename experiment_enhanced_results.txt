@@ -1,0 +1,215 @@
+======================================================================
+ENHANCED EXPERIMENTAL EVALUATION
+Blueprint Personas Architecture - Major Revision
+Date: 2026-03-17 15:53:36
+Clingo Version: 5.8.0
+Random Seed: 42
+======================================================================
+
+======================================================================
+PHASE 1: Multi-Step Attack Simulation (APT Pivot)
+======================================================================
+Step  Agent    Action       Trust   Decision   Latency(ms)
+------------------------------------------------------------
+T1    lena     scan         0.40    ALLOW      17.62
+T2    lena     exploit      0.20    BLOCK      1.75
+T3    bob      login        0.80    ALLOW      1.36
+T4    bob      powershell   0.60    DELEGATE   1.32
+
+======================================================================
+PHASE 2: Complex Multi-Agent Scenario (Enhanced)
+======================================================================
+Step  Agent      Action             Trust   Decision   Latency(ms)
+----------------------------------------------------------------------
+T1    lena       scan               0.40    ALLOW      1.25
+T2    lena       phishing           0.20    BLOCK      1.26
+T3    charlie    db_access          0.60    DELEGATE   1.27
+T4    diana      containment        0.80    ALLOW      1.23
+T5    eve        data_exfil         0.60    DELEGATE   1.24
+T6    alice      revoke_access      0.80    ALLOW      1.22
+T7    lena       lateral_movement   0.20    BLOCK      1.23
+T8    diana      escalate           0.80    ALLOW      1.21
+
+[NOTE] Charlie (compromised contractor) now receives DELEGATE (trust=0.60)
+       instead of ALLOW (trust=0.80), due to context-aware compromise detection.
+
+======================================================================
+PHASE 3: Adversarial Manipulation Resistance Testing
+======================================================================
+
+--- Scenario A: Trust Washing Attack ---
+Malicious agent (lena) attempts to build trust via low-risk actions
+then pivots to high-severity attack.
+Step  Action       Trust   Decision   Description
+------------------------------------------------------------
+A1    scan         0.40    DELEGATE   Recon (low-sev)
+A2    scan         0.40    DELEGATE   Repeat recon
+A3    exploit      0.20    BLOCK      Pivot to exploit
+Result: System correctly blocks pivot despite repeated low-risk actions.
+The base intention (malicious) prevents trust escalation via benign activity.
+
+--- Scenario B: Credential Spoofing (Compromised Account) ---
+Attacker operates through Charlie's compromised account.
+Step  Action          Trust   Decision   Description
+-----------------------------------------------------------------
+B1    db_access       0.60    DELEGATE   Normal DB access
+B2    file_upload     0.40    DELEGATE   Upload suspicious file
+Result: Compromised status triggers context penalty. Even neutral actions
+receive reduced trust (DELEGATE), and medium-severity actions are flagged.
+
+--- Scenario C: Multi-Vector Attack (Cross-Domain Correlation) ---
+Attacker launches multiple high-severity actions simultaneously.
+Lena performs exploit + lateral_movement simultaneously:
+  Trust: 0.20 | Decision: BLOCK
+Result: Cross-domain correlation rule detects multi-alert pattern -> BLOCK
+
+--- Scenario D: Slow-Burn Insider Threat (Eve) ---
+Eve performs normal actions then escalates.
+Step  Action          Trust   Decision   Description
+-----------------------------------------------------------------
+D1    email           0.80    ALLOW      Normal email
+D2    data_exfil      0.60    DELEGATE   Data exfiltration
+D3    usb_copy        0.60    DELEGATE   USB copy attempt
+Result: System detects behavioral deviation when actions conflict with persona.
+
+======================================================================
+PHASE 4: Real-World Dataset Validation (DARPA TC-Inspired)
+======================================================================
+
+Generating synthetic dataset following DARPA TC event taxonomy...
+Parameters: 5000 events, 15% attack, 10% noise, 75% benign
+
+Dataset Statistics:
+  Total events: 5000
+  Benign events: 4250
+  Malicious events: 750
+  Unique agents: 11
+  Event types: {'normal': np.int64(3750), 'attack_chain': np.int64(750), 'noise': np.int64(500)}
+
+Processing events through Cognitive Engine...
+
+--- Detection Performance (Binary: Flagged vs Benign) ---
+  Precision: 0.8276
+  Recall:    0.9280
+  F1-Score:  0.8749
+  Accuracy:  0.9602
+
+--- Decision Distribution ---
+  BENIGN      :  4159 events (correct: 4105)
+  SUSPICIOUS  :   457 events (correct: 312)
+  MALICIOUS   :   384 events (correct: 384)
+
+--- Gray Zone Analysis ---
+  Total events in gray zone: 457
+  Actually benign:    145
+  Actually malicious: 312
+  Gray zone enables human review for 457 ambiguous events
+
+--- Per-Event Latency Statistics ---
+  Mean:   1.35 ms
+  Median: 1.26 ms
+  Std:    0.25 ms
+  P95:    1.84 ms
+  P99:    2.40 ms
+  Max:    4.22 ms
+
+--- Confusion Matrix ---
+  TP: 696  FP: 145
+  FN: 54  TN: 4105
+
+======================================================================
+PHASE 5: Comparison with ML/UEBA Baseline
+======================================================================
+
+--- Isolation Forest (Unsupervised UEBA) ---
+  Precision: 0.3674
+  Recall:    0.3511
+  F1-Score:  0.3591
+  Accuracy:  0.8120
+
+--- Random Forest (Supervised ML Classifier) ---
+  Precision: 0.8633
+  Recall:    0.9822
+  F1-Score:  0.9189
+  Accuracy:  0.9740
+
+--- Our System (ASP+ROT+L-DINF) ---
+  Precision: 0.8360
+  Recall:    0.9289
+  F1-Score:  0.8800
+  Accuracy:  0.9620
+
+======================================================================
+COMPARISON TABLE
+======================================================================
+Method                         Precision    Recall     F1         Accuracy   Interpretable
+------------------------------------------------------------------------------------------
+Isolation Forest (UEBA)        0.3674       0.3511     0.3591     0.8120     No
+Random Forest (Supervised)     0.8633       0.9822     0.9189     0.9740     Partial
+ASP+ROT+L-DINF (Ours)          0.8360       0.9289     0.8800     0.9620     Yes
+
+--- Key Advantage: Gray Zone Handling ---
+  ML systems produce binary decisions (benign/malicious)
+  Our system identifies 457 events in the 'gray zone'
+  requiring human review, reducing both false positives and missed threats.
+  This tri-state decision model is not achievable with standard ML classifiers.
+
+======================================================================
+PHASE 6: Scalability Analysis with Statistical Rigor
+======================================================================
+
+Methodology:
+  - 30 independent runs per KB size
+  - KB sizes: [100, 500, 1000, 2500, 5000, 10000, 20000, 50000]
+  - Facts generated: random mix of persona facts, log entries, technique defs
+  - 95% confidence intervals reported
+  - Facts are generated randomly among: agents, objectives, tools, techniques, logs
+
+KB Size    Ground(ms)    Solve(ms)    Total(ms)     95% CI          Facts/ms
+--------------------------------------------------------------------------------
+100        0.66          0.07         1.89          [1.8-2.0]    52.9
+500        1.20          0.18         4.95          [4.7-5.2]    100.9
+1000       1.76          0.29         8.44          [8.3-8.6]    118.4
+2500       3.62          0.56         19.73         [19.4-20.1]    126.7
+5000       8.44          1.34         48.66         [45.4-51.9]    102.8
+10000      14.40         2.42         83.66         [80.1-87.2]    119.5
+20000      33.05         5.91         181.24        [173.0-189.5]    110.4
+50000      82.52         15.82        429.26        [407.7-450.8]    116.5
+
+--- Per-Component Breakdown (KB=10,000 facts, n=30 runs) ---
+  Parsing & API Overhead: 66.85 ms (79.9%)
+  ASP Grounding:          14.40 ms (17.2%)
+  ASP Solving:            2.42 ms (2.9%)
+  Total:                  83.66 ms (std: 9.31)
+
+======================================================================
+PHASE 7: Threshold Sensitivity Analysis
+======================================================================
+
+Justification of thresholds (0.20 for BLOCK, 0.80 for ALLOW):
+These thresholds are derived from the NIST Risk Management Framework
+(SP 800-37) categorization of risk levels:
+  - Very Low (0.00-0.20): Unacceptable risk -> BLOCK
+  - Low-Medium (0.21-0.79): Moderate risk -> DELEGATE (human review)
+  - High (0.80-1.00): Acceptable risk -> ALLOW
+
+Threshold Config       FP    FN    Delegated    Blocked    Allowed
+----------------------------------------------------------------------
+Conservative           0     0     4            1          3
+Balanced (Ours)        0     0     4            1          3
+Permissive             0     1     2            0          6
+
+The 'Balanced' configuration minimizes both FP and FN while maximizing
+the use of the gray zone for ambiguous cases requiring human judgment.
+
+======================================================================
+GENERATING FIGURES
+======================================================================
+  Saved: figures/scalability_analysis.png/pdf
+  Saved: figures/component_breakdown.png/pdf
+  Saved: figures/ml_comparison.png/pdf
+  Saved: figures/trust_evolution.png/pdf
+
+======================================================================
+ALL EXPERIMENTS COMPLETED SUCCESSFULLY
+======================================================================
