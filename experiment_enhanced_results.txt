@@ -1,7 +1,7 @@
 ======================================================================
 ENHANCED EXPERIMENTAL EVALUATION
 Blueprint Personas Architecture - Major Revision
-Date: 2026-03-17 15:53:36
+Date: 2026-03-25 21:15:45
 Clingo Version: 5.8.0
 Random Seed: 42
 ======================================================================
@@ -11,24 +11,24 @@ PHASE 1: Multi-Step Attack Simulation (APT Pivot)
 ======================================================================
 Step  Agent    Action       Trust   Decision   Latency(ms)
 ------------------------------------------------------------
-T1    lena     scan         0.40    ALLOW      17.62
-T2    lena     exploit      0.20    BLOCK      1.75
-T3    bob      login        0.80    ALLOW      1.36
-T4    bob      powershell   0.60    DELEGATE   1.32
+T1    lena     scan         0.40    ALLOW      3.73
+T2    lena     exploit      0.20    BLOCK      2.17
+T3    bob      login        0.80    ALLOW      1.92
+T4    bob      powershell   0.60    DELEGATE   2.02
 
 ======================================================================
 PHASE 2: Complex Multi-Agent Scenario (Enhanced)
 ======================================================================
 Step  Agent      Action             Trust   Decision   Latency(ms)
 ----------------------------------------------------------------------
-T1    lena       scan               0.40    ALLOW      1.25
-T2    lena       phishing           0.20    BLOCK      1.26
-T3    charlie    db_access          0.60    DELEGATE   1.27
-T4    diana      containment        0.80    ALLOW      1.23
-T5    eve        data_exfil         0.60    DELEGATE   1.24
-T6    alice      revoke_access      0.80    ALLOW      1.22
-T7    lena       lateral_movement   0.20    BLOCK      1.23
-T8    diana      escalate           0.80    ALLOW      1.21
+T1    lena       scan               0.40    ALLOW      1.98
+T2    lena       phishing           0.20    BLOCK      2.23
+T3    charlie    db_access          0.60    DELEGATE   2.39
+T4    diana      containment        0.80    ALLOW      2.30
+T5    eve        data_exfil         0.60    DELEGATE   1.98
+T6    alice      revoke_access      0.80    ALLOW      2.03
+T7    lena       lateral_movement   0.20    BLOCK      2.51
+T8    diana      escalate           0.80    ALLOW      2.23
 
 [NOTE] Charlie (compromised contractor) now receives DELEGATE (trust=0.60)
        instead of ALLOW (trust=0.80), due to context-aware compromise detection.
@@ -106,12 +106,12 @@ Processing events through Cognitive Engine...
   Gray zone enables human review for 457 ambiguous events
 
 --- Per-Event Latency Statistics ---
-  Mean:   1.35 ms
-  Median: 1.26 ms
-  Std:    0.25 ms
-  P95:    1.84 ms
-  P99:    2.40 ms
-  Max:    4.22 ms
+  Mean:   2.61 ms
+  Median: 2.37 ms
+  Std:    0.75 ms
+  P95:    4.10 ms
+  P99:    5.39 ms
+  Max:    14.88 ms
 
 --- Confusion Matrix ---
   TP: 696  FP: 145
@@ -122,10 +122,10 @@ PHASE 5: Comparison with ML/UEBA Baseline
 ======================================================================
 
 --- Isolation Forest (Unsupervised UEBA) ---
-  Precision: 0.3674
-  Recall:    0.3511
-  F1-Score:  0.3591
-  Accuracy:  0.8120
+  Precision: 0.3558
+  Recall:    0.3289
+  F1-Score:  0.3418
+  Accuracy:  0.8100
 
 --- Random Forest (Supervised ML Classifier) ---
   Precision: 0.8633
@@ -144,7 +144,7 @@ COMPARISON TABLE
 ======================================================================
 Method                         Precision    Recall     F1         Accuracy   Interpretable
 ------------------------------------------------------------------------------------------
-Isolation Forest (UEBA)        0.3674       0.3511     0.3591     0.8120     No
+Isolation Forest (UEBA)        0.3558       0.3289     0.3418     0.8100     No
 Random Forest (Supervised)     0.8633       0.9822     0.9189     0.9740     Partial
 ASP+ROT+L-DINF (Ours)          0.8360       0.9289     0.8800     0.9620     Yes
 
@@ -167,20 +167,20 @@ Methodology:
 
 KB Size    Ground(ms)    Solve(ms)    Total(ms)     95% CI          Facts/ms
 --------------------------------------------------------------------------------
-100        0.66          0.07         1.89          [1.8-2.0]    52.9
-500        1.20          0.18         4.95          [4.7-5.2]    100.9
-1000       1.76          0.29         8.44          [8.3-8.6]    118.4
-2500       3.62          0.56         19.73         [19.4-20.1]    126.7
-5000       8.44          1.34         48.66         [45.4-51.9]    102.8
-10000      14.40         2.42         83.66         [80.1-87.2]    119.5
-20000      33.05         5.91         181.24        [173.0-189.5]    110.4
-50000      82.52         15.82        429.26        [407.7-450.8]    116.5
+100        1.22          0.13         3.38          [3.2-3.5]    29.5
+500        1.92          0.26         8.18          [7.9-8.4]    61.1
+1000       2.89          0.45         14.82         [13.7-15.9]    67.5
+2500       5.79          0.97         32.91         [31.3-34.5]    76.0
+5000       9.86          1.82         59.44         [58.4-60.4]    84.1
+10000      22.65         4.19         127.65        [124.6-130.7]    78.3
+20000      45.82         9.03         260.40        [253.0-267.8]    76.8
+50000      115.57        24.47        648.03        [631.6-664.4]    77.2
 
 --- Per-Component Breakdown (KB=10,000 facts, n=30 runs) ---
-  Parsing & API Overhead: 66.85 ms (79.9%)
-  ASP Grounding:          14.40 ms (17.2%)
-  ASP Solving:            2.42 ms (2.9%)
-  Total:                  83.66 ms (std: 9.31)
+  Parsing & API Overhead: 100.81 ms (79.0%)
+  ASP Grounding:          22.65 ms (17.7%)
+  ASP Solving:            4.19 ms (3.3%)
+  Total:                  127.65 ms (std: 8.14)
 
 ======================================================================
 PHASE 7: Threshold Sensitivity Analysis
@@ -193,14 +193,30 @@ These thresholds are derived from the NIST Risk Management Framework
   - Low-Medium (0.21-0.79): Moderate risk -> DELEGATE (human review)
   - High (0.80-1.00): Acceptable risk -> ALLOW
 
-Threshold Config       FP    FN    Delegated    Blocked    Allowed
-----------------------------------------------------------------------
-Conservative           0     0     4            1          3
-Balanced (Ours)        0     0     4            1          3
-Permissive             0     1     2            0          6
+Dataset: 5000 events from Phase 4 (DARPA TC-inspired)
+Each event already has a trust_val (1-5 scale) from the cognitive engine.
 
-The 'Balanced' configuration minimizes both FP and FN while maximizing
-the use of the gray zone for ambiguous cases requiring human judgment.
+Config                 Block<=  Allow>=     FP     FN    Prec     Rec      F1   Deleg   Block   Allow
+----------------------------------------------------------------------------------------------------
+Conservative              0.40     1.00   4250      0  0.1500  1.0000  0.2609    4520     480       0
+Balanced (Ours)           0.20     0.80    145     54  0.8276  0.9280  0.8749     457     384    4159
+Permissive                0.20     0.60      0    270  1.0000  0.6400  0.7805      96     384    4520
+
+--- Analysis ---
+The 'Balanced' configuration (block<=0.20, allow>=0.80) achieves:
+  Precision: 0.8276, Recall: 0.9280, F1: 0.8749
+  457 events routed to gray zone for human review (9.1%)
+  54 false negatives (malicious events incorrectly allowed)
+  145 false positives (benign events flagged or blocked)
+
+The 'Conservative' configuration (block<=0.40, allow>=1.00):
+  Routes 4520 events to gray zone (90.4%)
+  Achieves higher recall (1.0000) but at the cost of
+  4250 false positives and heavy delegation overhead.
+
+The 'Permissive' configuration (block<=0.20, allow>=0.60):
+  Allows 4520 events autonomously but introduces
+  270 false negatives (missed malicious events).
 
 ======================================================================
 GENERATING FIGURES

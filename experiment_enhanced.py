@@ -895,8 +895,8 @@ observed(stress_test, login).
     return results
 
 
-def phase7_threshold_sensitivity(log):
-    """Phase 7: Threshold Sensitivity Analysis (Reviewer #2)."""
+def phase7_threshold_sensitivity(log, darpa_results):
+    """Phase 7: Threshold Sensitivity Analysis on full DARPA TC dataset (Reviewer #2)."""
     log("\n" + "=" * 70)
     log("PHASE 7: Threshold Sensitivity Analysis")
     log("=" * 70)
@@ -908,58 +908,96 @@ def phase7_threshold_sensitivity(log):
     log("  - Low-Medium (0.21-0.79): Moderate risk -> DELEGATE (human review)")
     log("  - High (0.80-1.00): Acceptable risk -> ALLOW")
     
-    engine = CognitiveEngine()
+    pred_df = darpa_results['pred_df']
+    n_total = len(pred_df)
+    log(f"\nDataset: {n_total} events from Phase 4 (DARPA TC-inspired)")
+    log("Each event already has a trust_val (1-5 scale) from the cognitive engine.")
     
-    # Test with different threshold configurations
+    # Threshold configurations (on 1-5 integer scale)
     thresholds = [
-        {"name": "Conservative", "block": 0.30, "allow": 0.90},
-        {"name": "Balanced (Ours)", "block": 0.20, "allow": 0.80},
-        {"name": "Permissive", "block": 0.10, "allow": 0.60},
+        {"name": "Conservative",    "block": 2, "allow": 5},   # block <= 0.40, allow >= 1.00
+        {"name": "Balanced (Ours)", "block": 1, "allow": 4},   # block <= 0.20, allow >= 0.80
+        {"name": "Permissive",      "block": 1, "allow": 3},   # block <= 0.20, allow >= 0.60
     ]
     
-    test_scenarios = [
-        {"ag": "lena", "act": "scan", "gt": "malicious"},
-        {"ag": "lena", "act": "exploit", "gt": "malicious"},
-        {"ag": "bob", "act": "login", "gt": "benign"},
-        {"ag": "bob", "act": "powershell", "gt": "suspicious"},
-        {"ag": "charlie", "act": "db_access", "gt": "suspicious"},
-        {"ag": "eve", "act": "data_exfil", "gt": "malicious"},
-        {"ag": "alice", "act": "revoke_access", "gt": "benign"},
-        {"ag": "diana", "act": "containment", "gt": "benign"},
-    ]
+    log(f"\n{'Config':<22} {'Block<=':>7} {'Allow>=':>8} {'FP':>6} {'FN':>6} "
+        f"{'Prec':>7} {'Rec':>7} {'F1':>7} {'Deleg':>7} {'Block':>7} {'Allow':>7}")
+    log("-" * 100)
     
-    log(f"\n{'Threshold Config':<22} {'FP':<5} {'FN':<5} {'Delegated':<12} {'Blocked':<10} {'Allowed'}")
-    log("-" * 70)
-    
+    results = []
     for thresh in thresholds:
-        block_t = int(thresh["block"] * 5)
-        allow_t = int(thresh["allow"] * 5)
+        block_t = thresh["block"]
+        allow_t = thresh["allow"]
         
-        fp = fn = delegated = blocked = allowed = 0
-        for sc in test_scenarios:
-            val, _, _ = engine.solve_scenario(sc['ag'], sc['act'], allow_t)
-            trust_raw = int(val * 5)
+        fp = fn = tp = tn = 0
+        delegated = blocked = allowed = 0
+        
+        for _, row in pred_df.iterrows():
+            trust_raw = row['trust_val']
+            gt = row['ground_truth']
             
             if trust_raw >= allow_t:
                 decision = "ALLOW"
                 allowed += 1
-                if sc['gt'] == 'malicious':
-                    fn += 1
+                if gt == 'malicious':
+                    fn += 1   # missed a malicious event
+                else:
+                    tn += 1   # correctly allowed benign
             elif trust_raw <= block_t:
                 decision = "BLOCK"
                 blocked += 1
-                if sc['gt'] == 'benign':
-                    fp += 1
+                if gt == 'benign':
+                    fp += 1   # incorrectly blocked benign
+                else:
+                    tp += 1   # correctly blocked malicious
             else:
                 decision = "DELEGATE"
                 delegated += 1
+                # For metrics: flagged (delegate+block) vs benign
+                if gt == 'malicious':
+                    tp += 1   # correctly flagged
+                else:
+                    fp += 1   # benign sent to review
         
-        log(f"{thresh['name']:<22} {fp:<5} {fn:<5} {delegated:<12} {blocked:<10} {allowed}")
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
+        
+        block_norm = thresh["block"] / 5.0
+        allow_norm = thresh["allow"] / 5.0
+        
+        log(f"{thresh['name']:<22} {block_norm:>7.2f} {allow_norm:>8.2f} {fp:>6} {fn:>6} "
+            f"{prec:>7.4f} {rec:>7.4f} {f1:>7.4f} {delegated:>7} {blocked:>7} {allowed:>7}")
+        
+        results.append({
+            "name": thresh["name"],
+            "block_t": block_norm, "allow_t": allow_norm,
+            "fp": fp, "fn": fn, "tp": tp, "tn": tn,
+            "precision": prec, "recall": rec, "f1": f1,
+            "delegated": delegated, "blocked": blocked, "allowed": allowed,
+            "total": n_total
+        })
     
-    log("\nThe 'Balanced' configuration minimizes both FP and FN while maximizing")
-    log("the use of the gray zone for ambiguous cases requiring human judgment.")
+    log(f"\n--- Analysis ---")
+    bal = results[1]  # Balanced
+    log(f"The 'Balanced' configuration (block<=0.20, allow>=0.80) achieves:")
+    log(f"  Precision: {bal['precision']:.4f}, Recall: {bal['recall']:.4f}, F1: {bal['f1']:.4f}")
+    log(f"  {bal['delegated']} events routed to gray zone for human review ({bal['delegated']/n_total*100:.1f}%)")
+    log(f"  {bal['fn']} false negatives (malicious events incorrectly allowed)")
+    log(f"  {bal['fp']} false positives (benign events flagged or blocked)")
     
-    return thresholds
+    con = results[0]  # Conservative
+    log(f"\nThe 'Conservative' configuration (block<=0.40, allow>=1.00):")
+    log(f"  Routes {con['delegated']} events to gray zone ({con['delegated']/n_total*100:.1f}%)")
+    log(f"  Achieves higher recall ({con['recall']:.4f}) but at the cost of")
+    log(f"  {con['fp']} false positives and heavy delegation overhead.")
+    
+    perm = results[2]  # Permissive
+    log(f"\nThe 'Permissive' configuration (block<=0.20, allow>=0.60):")
+    log(f"  Allows {perm['allowed']} events autonomously but introduces")
+    log(f"  {perm['fn']} false negatives (missed malicious events).")
+    
+    return results
 
 
 def generate_plots(scalability_results, darpa_results, ml_results, log):
@@ -1132,7 +1170,7 @@ def main():
     scalability_results = phase6_scalability_statistical(log)
     
     # Phase 7: Threshold Sensitivity (NEW - Reviewer #2)
-    phase7_threshold_sensitivity(log)
+    phase7_threshold_sensitivity(log, darpa_results)
     
     # Generate publication figures
     generate_plots(scalability_results, darpa_results, ml_results, log)
