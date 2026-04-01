@@ -63,7 +63,7 @@ technique(lena, phishing, high_severity).
 technique(lena, lateral_movement, high_severity).
 technique(lena, credential_dump, high_severity).
 
-persona(bob). intention(bob, benevolent). role(bob, employee).
+persona(bob). intention(bob, benevolent). role(bob, admin).
 technique(bob, login, neutral).
 technique(bob, powershell, high_severity).
 technique(bob, file_access, neutral).

@@ -1,7 +1,7 @@
 ======================================================================
 ENHANCED EXPERIMENTAL EVALUATION
 Blueprint Personas Architecture - Major Revision
-Date: 2026-03-25 21:15:45
+Date: 2026-04-01 03:29:35
 Clingo Version: 5.8.0
 Random Seed: 42
 ======================================================================
@@ -11,24 +11,24 @@ PHASE 1: Multi-Step Attack Simulation (APT Pivot)
 ======================================================================
 Step  Agent    Action       Trust   Decision   Latency(ms)
 ------------------------------------------------------------
-T1    lena     scan         0.40    ALLOW      3.73
-T2    lena     exploit      0.20    BLOCK      2.17
-T3    bob      login        0.80    ALLOW      1.92
-T4    bob      powershell   0.60    DELEGATE   2.02
+T1    lena     scan         0.40    ALLOW      3.43
+T2    lena     exploit      0.20    BLOCK      3.86
+T3    bob      login        0.80    ALLOW      2.29
+T4    bob      powershell   0.60    DELEGATE   2.09
 
 ======================================================================
 PHASE 2: Complex Multi-Agent Scenario (Enhanced)
 ======================================================================
 Step  Agent      Action             Trust   Decision   Latency(ms)
 ----------------------------------------------------------------------
-T1    lena       scan               0.40    ALLOW      1.98
-T2    lena       phishing           0.20    BLOCK      2.23
-T3    charlie    db_access          0.60    DELEGATE   2.39
-T4    diana      containment        0.80    ALLOW      2.30
-T5    eve        data_exfil         0.60    DELEGATE   1.98
-T6    alice      revoke_access      0.80    ALLOW      2.03
-T7    lena       lateral_movement   0.20    BLOCK      2.51
-T8    diana      escalate           0.80    ALLOW      2.23
+T1    lena       scan               0.40    ALLOW      2.18
+T2    lena       phishing           0.20    BLOCK      2.11
+T3    charlie    db_access          0.60    DELEGATE   3.44
+T4    diana      containment        0.80    ALLOW      2.46
+T5    eve        data_exfil         0.60    DELEGATE   2.13
+T6    alice      revoke_access      0.80    ALLOW      4.44
+T7    lena       lateral_movement   0.20    BLOCK      2.78
+T8    diana      escalate           0.80    ALLOW      3.02
 
 [NOTE] Charlie (compromised contractor) now receives DELEGATE (trust=0.60)
        instead of ALLOW (trust=0.80), due to context-aware compromise detection.
@@ -106,12 +106,12 @@ Processing events through Cognitive Engine...
   Gray zone enables human review for 457 ambiguous events
 
 --- Per-Event Latency Statistics ---
-  Mean:   2.61 ms
-  Median: 2.37 ms
-  Std:    0.75 ms
-  P95:    4.10 ms
-  P99:    5.39 ms
-  Max:    14.88 ms
+  Mean:   2.68 ms
+  Median: 2.35 ms
+  Std:    0.89 ms
+  P95:    3.65 ms
+  P99:    3.96 ms
+  Max:    38.06 ms
 
 --- Confusion Matrix ---
   TP: 696  FP: 145
@@ -167,20 +167,20 @@ Methodology:
 
 KB Size    Ground(ms)    Solve(ms)    Total(ms)     95% CI          Facts/ms
 --------------------------------------------------------------------------------
-100        1.22          0.13         3.38          [3.2-3.5]    29.5
-500        1.92          0.26         8.18          [7.9-8.4]    61.1
-1000       2.89          0.45         14.82         [13.7-15.9]    67.5
-2500       5.79          0.97         32.91         [31.3-34.5]    76.0
-5000       9.86          1.82         59.44         [58.4-60.4]    84.1
-10000      22.65         4.19         127.65        [124.6-130.7]    78.3
-20000      45.82         9.03         260.40        [253.0-267.8]    76.8
-50000      115.57        24.47        648.03        [631.6-664.4]    77.2
+100        1.48          0.18         3.97          [3.7-4.2]    25.2
+500        2.23          0.38         9.16          [8.8-9.5]    54.6
+1000       3.73          0.45         15.57         [15.4-15.7]    64.2
+2500       6.57          0.99         36.64         [33.0-40.2]    68.2
+5000       11.61         2.29         68.63         [68.0-69.3]    72.9
+10000      23.34         4.33         135.65        [134.4-136.9]    73.7
+20000      46.32         9.27         271.15        [268.7-273.6]    73.8
+50000      126.28        27.42        696.33        [689.5-703.1]    71.8
 
 --- Per-Component Breakdown (KB=10,000 facts, n=30 runs) ---
-  Parsing & API Overhead: 100.81 ms (79.0%)
-  ASP Grounding:          22.65 ms (17.7%)
-  ASP Solving:            4.19 ms (3.3%)
-  Total:                  127.65 ms (std: 8.14)
+  Parsing & API Overhead: 107.98 ms (79.6%)
+  ASP Grounding:          23.34 ms (17.2%)
+  ASP Solving:            4.33 ms (3.2%)
+  Total:                  135.65 ms (std: 3.34)
 
 ======================================================================
 PHASE 7: Threshold Sensitivity Analysis
